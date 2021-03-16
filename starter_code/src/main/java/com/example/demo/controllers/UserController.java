@@ -2,9 +2,12 @@ package com.example.demo.controllers;
 
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,9 +24,14 @@ import com.example.demo.model.requests.CreateUserRequest;
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
-	
+
+	private static final Logger log = LoggerFactory.getLogger(UserController.class);
+
 	@Autowired
 	private UserRepository userRepository;
+
+	@Autowired
+	private BCryptPasswordEncoder bCryptPasswordEncoder;
 	
 	@Autowired
 	private CartRepository cartRepository;
@@ -41,12 +49,24 @@ public class UserController {
 	
 	@PostMapping("/create")
 	public ResponseEntity<User> createUser(@RequestBody CreateUserRequest createUserRequest) {
+		log.debug("Create user request for username [{}]", createUserRequest.getUsername());
+		if(createUserRequest.getUsername() == null || createUserRequest.getUsername().length() < 1) {
+			log.error("Cannot create user [{}] because the username is invalid", createUserRequest.getUsername());
+			return ResponseEntity.badRequest().build();
+		}
+
+		if (createUserRequest.getPassword().length() < 6 || !createUserRequest.getPassword().equals(createUserRequest.getConfirmPassword())) {
+			log.error("Cannot create user [{}] because the password is invalid", createUserRequest.getUsername());
+			return ResponseEntity.badRequest().build();
+		}
 		User user = new User();
 		user.setUsername(createUserRequest.getUsername());
+		user.setPassword(bCryptPasswordEncoder.encode(createUserRequest.getPassword()));
 		Cart cart = new Cart();
 		cartRepository.save(cart);
 		user.setCart(cart);
 		userRepository.save(user);
+		log.info("New user has been registered [{}]", user.getUsername());
 		return ResponseEntity.ok(user);
 	}
 	
