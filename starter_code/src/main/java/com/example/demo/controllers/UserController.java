@@ -59,6 +59,13 @@ public class UserController {
 			log.error("Cannot create user [{}] because the password is invalid", createUserRequest.getUsername());
 			return ResponseEntity.badRequest().build();
 		}
+
+		User exists = userRepository.findByUsername(createUserRequest.getUsername());
+		if(exists != null) {
+			log.error("Cannot create user [{}] because the username is already taken!", createUserRequest.getUsername());
+			return ResponseEntity.badRequest().build();
+		}
+
 		User user = new User();
 		user.setUsername(createUserRequest.getUsername());
 		user.setPassword(bCryptPasswordEncoder.encode(createUserRequest.getPassword()));

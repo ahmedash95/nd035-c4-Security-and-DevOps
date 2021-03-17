@@ -36,11 +36,12 @@ public class OrderController {
 	public ResponseEntity<UserOrder> submit(@PathVariable String username) {
 		User user = userRepository.findByUsername(username);
 		if(user == null) {
-			log.info("User {} is not found!", username);
+			log.info("Submit Order: User {} is not found!", username);
 			return ResponseEntity.notFound().build();
 		}
 		UserOrder order = UserOrder.createFromCart(user.getCart());
 		orderRepository.save(order);
+		log.info("Submit Order: Created successfully for user {}", username);
 		return ResponseEntity.ok(order);
 	}
 	
